@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Sign in to link your account</title>
+  <style>
+    /* (use the same CSS you used earlier) */
+    body { font-family: system-ui; background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .box { width: 90%; max-width: 420px; background: #111; padding: 24px; border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.6); }
+    h1 { margin-top:0; margin-bottom:12px; font-size:20px; }
+    label { display: block; font-size:14px; margin-bottom:4px; }
+    input { width:100%; padding:10px; border-radius:6px; border:1px solid #444; background:#000; color:#fff; margin-bottom:12px; box-sizing:border-box; }
+    button { width:100%; padding:12px; border:none; border-radius:6px; background:#00b894; color:#000; font-weight:600; font-size:15px; }
+    button:disabled { opacity:0.6; }
+    .error { color:#ff7675; font-size:13px; min-height:16px; margin-bottom:8px; }
+    .note { font-size:12px; color:#888; margin-top:8px; }
+  </style>
+</head>
+<body data-redirect-uri="" data-state="">
+  <div class="box">
+    <h1>Sign in to link your account</h1>
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required />
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required />
+      <div id="error" class="error"></div>
+      <button type="submit" id="submitBtn">Sign in</button>
+    </form>
+    <div class="note">Use the same email and password you use in the mobile app.</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const redirectUri = params.get("redirect_uri");
+    const state = params.get("state") || "";
+
+    document.body.dataset.redirectUri = redirectUri;
+    document.body.dataset.state = state;
+
+    const form = document.getElementById("loginForm");
+    const errorEl = document.getElementById("error");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorEl.textContent = "";
+      submitBtn.disabled = true;
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch("https://mvmvqycvorstsftcldzs.supabase.co/functions/v1/auth-callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, redirect_uri: redirectUri, state })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Login failed");
+        window.location.href = data.redirect_url;
+      } catch (err) {
+        errorEl.textContent = err.message || "Login failed";
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
