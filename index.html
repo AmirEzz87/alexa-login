@@ -1,3 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign in to link your account</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #000;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .box {
+      width: 90%;
+      max-width: 420px;
+      background: #111;
+      padding: 22px;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+    label { display: block; margin-bottom: 8px; font-weight: bold; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      background: #222;
+      border: 1px solid #444;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #00c7a4;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #error { color: #ff4d4d; margin-bottom: 10px; font-size: 15px; }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h2>Sign in to link your account</h2>
+
+    <div id="error"></div>
+
+    <label>Email</label>
+    <input id="email" type="email" autocomplete="email" />
+
+    <label>Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
+
+    <button onclick="login()">Sign in</button>
+
+    <p style="margin-top: 12px; opacity: 0.7; font-size: 14px;">
+      Use the same email and password you use in the mobile app.
+    </p>
+  </div>
+
 <script>
 const url = new URL(window.location.href);
 
@@ -10,7 +79,7 @@ if (!client_id || !redirect_uri) {
 }
 
 async function login() {
-    const email = document.getElementById("email").value;
+    const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
 
     try {
@@ -28,13 +97,17 @@ async function login() {
         const data = await res.json();
 
         if (!data.redirect_url) {
-            document.getElementById("error").innerText = data.error || "Login failed";
+            document.getElementById("error").innerText =
+                data.error || "Login failed";
             return;
         }
 
         window.location.href = data.redirect_url;
     } catch (err) {
-        document.getElementById("error").innerText = "NetworkError";
+        document.getElementById("error").innerText = "NetworkError when attempting to fetch resource.";
     }
 }
 </script>
+
+</body>
+</html>
