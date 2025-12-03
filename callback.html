@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Alexa Callback</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            background: #0d1117;
+            color: white;
+            font-family: Arial;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Completing login...</h2>
+
+    <script>
+        const supabase = supabase.createClient(
+            "YOUR_SUPABASE_URL",
+            "YOUR_SUPABASE_ANON_KEY"
+        );
+
+        async function finish() {
+            const url = new URL(window.location.href);
+            const code = url.searchParams.get("code");
+
+            if (!code) {
+                document.body.innerHTML = "<h2>Missing authorization code</h2>";
+                return;
+            }
+
+            // Update the existing record: add created_at auto and leave tokens null
+            await supabase.from("alexa_oauth_tokens").update({
+                created_at: new Date().toISOString()
+            }).eq("auth_code", code);
+
+            // Show success message
+            document.body.innerHTML = "<h2>Login complete. You may close this window.</h2>";
+
+            // Auto-close after 1 sec
+            setTimeout(() => window.close(), 1500);
+        }
+
+        finish();
+    </script>
+
+</body>
+</html>
