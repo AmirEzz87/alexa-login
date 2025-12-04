@@ -1,70 +1,144 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Alexa Login</title>
   <meta charset="UTF-8" />
+  <title>Link Alexa to Smart Home</title>
+  <!-- Supabase JS via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background:#111; color:white; font-family:Arial; text-align:center; padding-top:40px; }
-    input, button { 
-      padding:12px; width:80%; margin-top:10px; font-size:18px; 
-      border-radius:6px; border:none;
-    }
-    input { background:#eee; }
-    button { background:#2ecc71; color:white; cursor:pointer; }
-    button:hover { background:#27ae60; }
+    body { font-family: sans-serif; max-width: 480px; margin: 40px auto; }
+    h1 { font-size: 22px; }
+    .hidden { display: none; }
+    .error { color: red; margin-top: 8px; }
+    button { padding: 8px 16px; margin-right: 8px; }
+    input { display: block; margin: 6px 0; padding: 6px; width: 100%; }
   </style>
 </head>
 <body>
+  <h1>Link your Smart Home account</h1>
 
-<h2>Alexa Login</h2>
+  <div id="status"></div>
 
-<input id="email" type="email" placeholder="Email" />
-<input id="password" type="password" placeholder="Password" />
+  <!-- Login form -->
+  <div id="login-block">
+    <p>Sign in with the same account you use in the smart home app.</p>
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <button id="login-btn">Sign in</button>
+    <div id="login-error" class="error"></div>
+  </div>
 
-<button onclick="login()">Sign In</button>
+  <!-- Consent screen -->
+  <div id="consent-block" class="hidden">
+    <p id="app-info"></p>
+    <p id="scopes-info"></p>
+    <button id="approve-btn">Allow</button>
+    <button id="deny-btn">Cancel</button>
+    <div id="consent-error" class="error"></div>
+  </div>
 
-<script>
-function getParam(name) {
-  return new URL(window.location).searchParams.get(name);
-}
+  <script>
+    // TODO: REPLACE with your Supabase project URL + anon key
+    const SUPABASE_URL = 'https://mvmvqycvorstsftcldzs.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bXZxeWN2b3JzdHNmdGNsZHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDczNTQsImV4cCI6MjA3MDU4MzM1NH0.gA744wsXronSyRXHCS60DVcVqJ3_y0MgkqEhLsFxYDI';
 
-async function login() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  if (!email || !password) {
-    alert("Please enter email and password.");
-    return;
-  }
-
-  const payload = {
-    email,
-    password,
-    redirect_uri: getParam("redirect_uri"),
-    state: getParam("state")
-  };
-
-  const res = await fetch(
-    "https://mvmvqycvorstsftcldzs.supabase.co/functions/v1/auth-callback",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+    function getAuthorizationId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('authorization_id');
     }
-  );
 
-  const data = await res.json();
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg || '';
+    }
 
-  if (!res.ok || data.error) {
-    alert("Login failed: " + (data.error || "Unknown error"));
-    console.error(data);
-    return;
-  }
+    async function ensureLoggedIn(authorizationId) {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        document.getElementById('login-block').classList.add('hidden');
+        await loadConsent(authorizationId);
+        return;
+      }
 
-  // Redirect back to Alexa
-  window.location.href = data.redirect_url;
-}
-</script>
+      // user not logged in -> show login form
+      document.getElementById('login-block').classList.remove('hidden');
+      document.getElementById('login-btn').onclick = async () => {
+        document.getElementById('login-error').textContent = '';
+        setStatus('Signing in...');
 
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+          setStatus('');
+          document.getElementById('login-error').textContent = error.message;
+          return;
+        }
+        setStatus('Signed in. Loading consent...');
+        await loadConsent(authorizationId);
+      };
+    }
+
+    async function loadConsent(authorizationId) {
+      const { data, error } = await sb.auth.oauth.getAuthorizationDetails(authorizationId);
+      if (error || !data) {
+        document.getElementById('consent-error').textContent =
+          'Error: ' + (error?.message || 'Invalid authorization request');
+        return;
+      }
+
+      document.getElementById('login-block').classList.add('hidden');
+      document.getElementById('consent-block').classList.remove('hidden');
+
+      document.getElementById('app-info').textContent =
+        `${data.client.name} wants to access your smart home account.`;
+
+      if (data.scopes && data.scopes.length > 0) {
+        document.getElementById('scopes-info').textContent =
+          'Permissions: ' + data.scopes.join(', ');
+      }
+
+      document.getElementById('approve-btn').onclick = async () => {
+        document.getElementById('consent-error').textContent = '';
+        setStatus('Approving...');
+        const { data: result, error: approveErr } =
+          await sb.auth.oauth.approveAuthorization(authorizationId);
+        if (approveErr) {
+          setStatus('');
+          document.getElementById('consent-error').textContent = approveErr.message;
+          return;
+        }
+        // Supabase tells us where to send the user back
+        window.location.href = result.redirect_to;
+      };
+
+      document.getElementById('deny-btn').onclick = async () => {
+        document.getElementById('consent-error').textContent = '';
+        setStatus('Cancelling...');
+        const { data: result, error: denyErr } =
+          await sb.auth.oauth.denyAuthorization(authorizationId);
+        if (denyErr) {
+          setStatus('');
+          document.getElementById('consent-error').textContent = denyErr.message;
+          return;
+        }
+        window.location.href = result.redirect_to;
+      };
+    }
+
+    (async () => {
+      const authorizationId = getAuthorizationId();
+      if (!authorizationId) {
+        setStatus('Missing authorization_id – call this page only from Supabase OAuth.');
+        return;
+      }
+      setStatus('Checking session...');
+      await ensureLoggedIn(authorizationId);
+      setStatus('');
+    })();
+  </script>
 </body>
 </html>
