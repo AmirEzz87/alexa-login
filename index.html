@@ -1,278 +1,70 @@
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
   <title>Alexa Login</title>
-
   <meta charset="UTF-8" />
-
   <style>
-
     body { background:#111; color:white; font-family:Arial; text-align:center; padding-top:40px; }
-
     input, button { 
-
       padding:12px; width:80%; margin-top:10px; font-size:18px; 
-
       border-radius:6px; border:none;
-
     }
-
     input { background:#eee; }
-
     button { background:#2ecc71; color:white; cursor:pointer; }
-
     button:hover { background:#27ae60; }
-
   </style>
-
 </head>
-
 <body>
-
-
 
 <h2>Alexa Login</h2>
 
-
-
 <input id="email" type="email" placeholder="Email" />
-
 <input id="password" type="password" placeholder="Password" />
-
-
 
 <button onclick="login()">Sign In</button>
 
-
-
 <script>
-
-
-const supabaseUrl = "https://mvmvqycvorstsftcldzs.supabase.co";
-
-
-const supabaseAnon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bXZxeWN2b3JzdHNmdGNsZHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDczNTQsImV4cCI6MjA3MDU4MzM1NH0.gA744wsXronSyRXHCS60DVcVqJ3_y0MgkqEhLsFxYDI";
-
-
-
-
-
-function getQueryParam(name) {
-
-
 function getParam(name) {
-
   return new URL(window.location).searchParams.get(name);
-
 }
 
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-
-@@ -40,54 +37,32 @@
-
+  if (!email || !password) {
+    alert("Please enter email and password.");
     return;
-
   }
 
-
-
-
-  // Step 1 — Login using email + password
-
-
-  const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-
-
-    method: "POST",
-
-
-    headers: { 
-
-
-      "apikey": supabaseAnon, 
-
-
-      "Content-Type": "application/json" 
-
-
-    },
-
-
-    body: JSON.stringify({ email, password })
-
-
-  });
-
-
   const payload = {
-
-
     email,
-
-
     password,
-
-
     redirect_uri: getParam("redirect_uri"),
-
-
     state: getParam("state")
-
-
   };
 
-
-
-
-
   const res = await fetch(
-
-
     "https://mvmvqycvorstsftcldzs.supabase.co/functions/v1/auth-callback",
-
-
     {
-
-
       method: "POST",
-
-
       headers: { "Content-Type": "application/json" },
-
-
       body: JSON.stringify(payload)
-
-
     }
-
-
   );
-
-
 
   const data = await res.json();
 
-
-
-
-  if (data.error) {
-
-
-    alert("Login failed: " + data.error_description);
-
-
   if (!res.ok || data.error) {
-
-
     alert("Login failed: " + (data.error || "Unknown error"));
-
     console.error(data);
-
     return;
-
   }
-
-
-
-
-  const userId = data.user.id;
-
-
-
-
-
-  // Step 2 — Create auth_code in your DB
-
-
-  const authCode = crypto.randomUUID().replace(/-/g, "");
-
-
-
-
-
-  const insertRes = await fetch(`${supabaseUrl}/rest/v1/alexa_oauth_tokens`, {
-
-
-    method: "POST",
-
-
-    headers: {
-
-
-      "apikey": supabaseAnon,
-
-
-      "Authorization": `Bearer ${supabaseAnon}`,
-
-
-      "Content-Type": "application/json",
-
-
-      "Prefer": "return=minimal"
-
-
-    },
-
-
-    body: JSON.stringify({
-
-
-      user_id: userId,
-
-
-      auth_code: authCode
-
-
-    })
-
-
-  });
-
-
-
-
-
-  if (!insertRes.ok) {
-
-
-    alert("Failed to store auth code.");
-
-
-    console.error(await insertRes.text());
-
-
-    return;
-
-
-  }
-
-
-
-
-
-  // Step 3 — Redirect back to Alexa
-
-
-  const redirectUri = getQueryParam("redirect_uri");
-
-
-  const state = getQueryParam("state");
-
-
-
-
-
-  window.location.href = `${redirectUri}?code=${authCode}&state=${state}`;
-
 
   // Redirect back to Alexa
-
-
   window.location.href = data.redirect_url;
-
 }
-
 </script>
+
+</body>
+</html>
