@@ -1,174 +1,278 @@
 <!DOCTYPE html>
-<html lang="en">
+
+<html>
+
 <head>
-  <meta charset="UTF-8" />
+
   <title>Alexa Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta charset="UTF-8" />
+
   <style>
-    body { background:#000; color:#fff; font-family:sans-serif; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
-    .card { background:#111; padding:32px; border-radius:8px; width:100%; max-width:600px; box-sizing:border-box; }
-    h1 { text-align:center; margin-top:0; margin-bottom:24px; }
-    .field { margin-bottom:16px; }
-    input { width:100%; padding:12px; font-size:16px; border-radius:4px; border:none; box-sizing:border-box; }
-    button { width:100%; padding:14px; font-size:18px; font-weight:bold; border:none; border-radius:4px; background:#1dd65f; color:#000; cursor:pointer; }
-    button:disabled { opacity:0.6; cursor:not-allowed; }
-    .hidden { display:none; }
-    .status { margin-bottom:16px; font-size:14px; color:#ccc; }
-    .error { color:#ff6b6b; }
-    .scopes { margin:12px 0; padding:12px; background:#181818; border-radius:4px; }
+
+    body { background:#111; color:white; font-family:Arial; text-align:center; padding-top:40px; }
+
+    input, button { 
+
+      padding:12px; width:80%; margin-top:10px; font-size:18px; 
+
+      border-radius:6px; border:none;
+
+    }
+
+    input { background:#eee; }
+
+    button { background:#2ecc71; color:white; cursor:pointer; }
+
+    button:hover { background:#27ae60; }
+
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
+
 <body>
-  <div class="card">
-    <h1>Alexa Login</h1>
-    <div id="status" class="status"></div>
 
-    <!-- LOGIN BLOCK -->
-    <div id="login-block">
-      <div class="field">
-        <input id="email" type="email" placeholder="Email" autocomplete="email" />
-      </div>
-      <div class="field">
-        <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
-      </div>
-      <button id="login-btn">Sign In</button>
-    </div>
 
-    <!-- CONSENT BLOCK -->
-    <div id="consent-block" class="hidden">
-      <p id="consent-text"></p>
-      <div id="scopes" class="scopes hidden"></div>
-      <button id="approve-btn">Allow</button>
-      <button id="deny-btn" style="margin-top:8px; background:#444; color:#fff;">Deny</button>
-    </div>
-  </div>
 
-  <script>
-    // TODO: put YOUR values here
-    const SUPABASE_URL = "https://mvmvqycvorstsfcldzs.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bXZxeWN2b3JzdHNmdGNsZHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDczNTQsImV4cCI6MjA3MDU4MzM1NH0.gA744wsXronSyRXHCS60DVcVqJ3_y0MgkqEhLsFxYDI";
+<h2>Alexa Login</h2>
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const statusEl = document.getElementById("status");
-    const loginBlock = document.getElementById("login-block");
-    const consentBlock = document.getElementById("consent-block");
-    const scopesEl = document.getElementById("scopes");
-    const approveBtn = document.getElementById("approve-btn");
-    const denyBtn = document.getElementById("deny-btn");
-    const loginBtn = document.getElementById("login-btn");
 
-    function setStatus(msg, isError = false) {
-      statusEl.textContent = msg || "";
-      statusEl.classList.toggle("error", isError);
+<input id="email" type="email" placeholder="Email" />
+
+<input id="password" type="password" placeholder="Password" />
+
+
+
+<button onclick="login()">Sign In</button>
+
+
+
+<script>
+
+
+const supabaseUrl = "https://mvmvqycvorstsftcldzs.supabase.co";
+
+
+const supabaseAnon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bXZxeWN2b3JzdHNmdGNsZHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDczNTQsImV4cCI6MjA3MDU4MzM1NH0.gA744wsXronSyRXHCS60DVcVqJ3_y0MgkqEhLsFxYDI";
+
+
+
+
+
+function getQueryParam(name) {
+
+
+function getParam(name) {
+
+  return new URL(window.location).searchParams.get(name);
+
+}
+
+
+
+@@ -40,54 +37,32 @@
+
+    return;
+
+  }
+
+
+
+
+  // Step 1 — Login using email + password
+
+
+  const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+
+
+    method: "POST",
+
+
+    headers: { 
+
+
+      "apikey": supabaseAnon, 
+
+
+      "Content-Type": "application/json" 
+
+
+    },
+
+
+    body: JSON.stringify({ email, password })
+
+
+  });
+
+
+  const payload = {
+
+
+    email,
+
+
+    password,
+
+
+    redirect_uri: getParam("redirect_uri"),
+
+
+    state: getParam("state")
+
+
+  };
+
+
+
+
+
+  const res = await fetch(
+
+
+    "https://mvmvqycvorstsftcldzs.supabase.co/functions/v1/auth-callback",
+
+
+    {
+
+
+      method: "POST",
+
+
+      headers: { "Content-Type": "application/json" },
+
+
+      body: JSON.stringify(payload)
+
+
     }
 
-    function getAuthorizationId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("authorization_id");
-    }
 
-    async function loadConsent(authId) {
-      setStatus("Loading permissions...");
-      const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authId);
+  );
 
-      if (error || !data) {
-        console.error("getAuthorizationDetails error:", error);
-        setStatus("Invalid or expired authorization request.", true);
-        return;
-      }
 
-      // hide login, show consent
-      loginBlock.classList.add("hidden");
-      consentBlock.classList.remove("hidden");
 
-      const clientName = data.client?.name || "your Alexa integration";
-      document.getElementById("consent-text").textContent =
-        `Allow ${clientName} to access your account?`;
+  const data = await res.json();
 
-      if (data.scopes && data.scopes.length > 0) {
-        scopesEl.classList.remove("hidden");
-        scopesEl.innerHTML = "<strong>Requested permissions:</strong><br>" +
-          data.scopes.map(s => `• ${s}`).join("<br>");
-      } else {
-        scopesEl.classList.add("hidden");
-      }
 
-      setStatus("");
-      approveBtn.onclick = () => handleDecision(authId, true);
-      denyBtn.onclick = () => handleDecision(authId, false);
-    }
 
-    async function handleDecision(authId, approve) {
-      setStatus(approve ? "Authorizing..." : "Denying...");
-      approveBtn.disabled = true;
-      denyBtn.disabled = true;
 
-      const fn = approve
-        ? supabase.auth.oauth.approveAuthorization
-        : supabase.auth.oauth.denyAuthorization;
+  if (data.error) {
 
-      const { data, error } = await fn(authId);
 
-      if (error || !data?.redirect_to) {
-        console.error("decision error:", error);
-        setStatus("Failed to complete authorization.", true);
-        approveBtn.disabled = false;
-        denyBtn.disabled = false;
-        return;
-      }
+    alert("Login failed: " + data.error_description);
 
-      window.location.href = data.redirect_to;
-    }
 
-    async function ensureLoggedIn(authId) {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        // already logged in
-        loginBlock.classList.add("hidden");
-        await loadConsent(authId);
-        return;
-      }
+  if (!res.ok || data.error) {
 
-      // not logged in → show login form
-      loginBlock.classList.remove("hidden");
-      consentBlock.classList.add("hidden");
-      setStatus("Sign in to link your Alexa account.");
 
-      loginBtn.onclick = async () => {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
+    alert("Login failed: " + (data.error || "Unknown error"));
 
-        if (!email || !password) {
-          setStatus("Email and password are required.", true);
-          return;
-        }
+    console.error(data);
 
-        loginBtn.disabled = true;
-        setStatus("Signing in...");
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        loginBtn.disabled = false;
+    return;
 
-        if (error) {
-          console.error("signIn error:", error);
-          setStatus("Invalid email or password.", true);
-          return;
-        }
+  }
 
-        await loadConsent(authId);
-      };
-    }
 
-    (async () => {
-      const authId = getAuthorizationId();
-      if (!authId) {
-        setStatus("Missing authorization_id.", true);
-        return;
-      }
-      await ensureLoggedIn(authId);
-    })();
-  </script>
-</body>
-</html>
 
+
+  const userId = data.user.id;
+
+
+
+
+
+  // Step 2 — Create auth_code in your DB
+
+
+  const authCode = crypto.randomUUID().replace(/-/g, "");
+
+
+
+
+
+  const insertRes = await fetch(`${supabaseUrl}/rest/v1/alexa_oauth_tokens`, {
+
+
+    method: "POST",
+
+
+    headers: {
+
+
+      "apikey": supabaseAnon,
+
+
+      "Authorization": `Bearer ${supabaseAnon}`,
+
+
+      "Content-Type": "application/json",
+
+
+      "Prefer": "return=minimal"
+
+
+    },
+
+
+    body: JSON.stringify({
+
+
+      user_id: userId,
+
+
+      auth_code: authCode
+
+
+    })
+
+
+  });
+
+
+
+
+
+  if (!insertRes.ok) {
+
+
+    alert("Failed to store auth code.");
+
+
+    console.error(await insertRes.text());
+
+
+    return;
+
+
+  }
+
+
+
+
+
+  // Step 3 — Redirect back to Alexa
+
+
+  const redirectUri = getQueryParam("redirect_uri");
+
+
+  const state = getQueryParam("state");
+
+
+
+
+
+  window.location.href = `${redirectUri}?code=${authCode}&state=${state}`;
+
+
+  // Redirect back to Alexa
+
+
+  window.location.href = data.redirect_url;
+
+}
+
+</script>
